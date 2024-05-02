@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory android:title="General Settings">
+        <SwitchPreferenceCompat
+            android:key="voice_feedback"
+            android:title="Voice Feedback"
+            android:summary="Toggle voice feedback for operations"
+            android:defaultValue="true"
+            android:icon="@drawable/ic_launcher_foreground" />
+
+        <SwitchPreferenceCompat
+            android:key="notifications"
+            android:title="Notifications"
+            android:summary="Receive alerts and notifications"
+            android:defaultValue="true"
+            android:icon="@drawable/ic_launcher_foreground" />
+
+        <SeekBarPreference
+            android:key="voice_speed"
+            android:title="Voice Speed"
+            android:summary="Adjust the speed of the voice feedback"
+            android:defaultValue="50"
+            android:max="100"
+            android:icon="@drawable/ic_launcher_foreground" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="Accessibility">
+        <SwitchPreferenceCompat
+            android:key="large_text"
+            android:title="Large Text"
+            android:summary="Enable larger text for better readability"
+            android:defaultValue="false"
+            android:icon="@drawable/ic_launcher_foreground" />
+
+        <ListPreference
+            android:key="theme_selection"
+            android:title="Theme Selection"
+            android:summary="Select light or dark theme for better visibility"
+            android:dialogTitle="Choose Theme"
+            android:entries="@array/theme_options"
+            android:entryValues="@array/theme_values"
+            android:defaultValue="light"
+            android:icon="@drawable/ic_launcher_foreground" />
+    </PreferenceCategory>
+
+</PreferenceScreen>
