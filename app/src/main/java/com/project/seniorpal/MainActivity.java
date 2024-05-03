@@ -7,8 +7,11 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
+import android.widget.ScrollView;
+import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
@@ -27,9 +30,15 @@ public class MainActivity extends AppCompatActivity implements EventListener {
     private boolean isClose=true;
     private RadioButton chinese,english;
     private RadioGroup language;
+
 //    private TextView textView;
 
+    private TextView chatNotice;
+    private ImageButton sendButton;
+
     private EditText userInput;
+
+    private ScrollView scrollView;
 
     private int id;
     @SuppressLint("MissingInflatedId")
@@ -43,6 +52,36 @@ public class MainActivity extends AppCompatActivity implements EventListener {
         chinese = findViewById(R.id.chinese);
         english = findViewById(R.id.english);
         language = findViewById(R.id.language);
+        scrollView = findViewById(R.id.sv_chat_list);
+
+        // 获取显示消息的TextView
+        chatNotice = findViewById(R.id.tv_chat_notice);
+        // 获取发送按钮
+        sendButton = findViewById(R.id.bt_send);
+
+        // 设置发送按钮的点击事件
+        sendButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String currentText = chatNotice.getText().toString();  // 获取当前TextView的文本
+                String userInputText = userInput.getText().toString();  // 获取用户输入的文本
+                if (!userInputText.isEmpty()) {
+                    // 如果用户输入的文本不为空，则追加到TextView的现有文本后面
+                    // 这里加上换行符 "\n" 是为了将每条消息显示在新的一行
+                    String newText = currentText + "\n" + userInputText;
+                    chatNotice.setText(newText);  // 更新TextView的文本
+                    // 确保ScrollView滚动到底部以显示最新消息
+                    scrollView.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            scrollView.fullScroll(ScrollView.FOCUS_DOWN);
+                        }
+                    }, 100);  // 延迟100毫秒滚动到底部，确保文本视图已经更新
+                    userInput.setText("");  // 清空输入框
+                }
+            }
+        });
+
         language.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(RadioGroup group, int checkedId) {
