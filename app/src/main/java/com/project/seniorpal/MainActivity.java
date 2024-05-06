@@ -5,9 +5,11 @@ import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.ScrollView;
@@ -26,106 +28,104 @@ import org.json.JSONObject;
 
 public class MainActivity extends AppCompatActivity implements EventListener {
 
-    private boolean isEnd=false;
-    private boolean isClose=true;
-    private RadioButton chinese,english;
+    private boolean isEnd = false;
+    private boolean isClose = true;
+    private RadioButton chinese, english;
     private RadioGroup language;
 
-//    private TextView textView;
-
-    private TextView chatNotice;
+    private EditText userInput;
+    private ScrollView scrollView;
+    private LinearLayout chatList;
     private ImageButton sendButton;
 
-    private EditText userInput;
-
-    private ScrollView scrollView;
-
     private int id;
+
     @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         requestPermissions();
-//        textView = findViewById(R.id.text);
+
+        initializeViews();
+        setupListeners();
+    }
+
+    private void initializeViews() {
         userInput = findViewById(R.id.et_user_input);
         chinese = findViewById(R.id.chinese);
         english = findViewById(R.id.english);
         language = findViewById(R.id.language);
         scrollView = findViewById(R.id.sv_chat_list);
-
-        // 获取显示消息的TextView
-        chatNotice = findViewById(R.id.tv_chat_notice);
-        // 获取发送按钮
+        chatList = findViewById(R.id.ll_chat_list);
         sendButton = findViewById(R.id.bt_send);
-
-        // 设置发送按钮的点击事件
-        sendButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String currentText = chatNotice.getText().toString();  // 获取当前TextView的文本
-                String userInputText = userInput.getText().toString();  // 获取用户输入的文本
-                if (!userInputText.isEmpty()) {
-                    // 如果用户输入的文本不为空，则追加到TextView的现有文本后面
-                    // 这里加上换行符 "\n" 是为了将每条消息显示在新的一行
-                    String newText = currentText + "\n" + userInputText;
-                    chatNotice.setText(newText);  // 更新TextView的文本
-                    // 确保ScrollView滚动到底部以显示最新消息
-                    scrollView.postDelayed(new Runnable() {
-                        @Override
-                        public void run() {
-                            scrollView.fullScroll(ScrollView.FOCUS_DOWN);
-                        }
-                    }, 100);  // 延迟100毫秒滚动到底部，确保文本视图已经更新
-                    userInput.setText("");  // 清空输入框
-                }
-            }
-        });
-
-        language.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(RadioGroup group, int checkedId) {
-
-                if (checkedId==R.id.chinese){
-                    id = 0;
-                }else {
-                    id = 1;
-                }
-                VoiceUtil.wakeup(getApplicationContext(),id);
-            }
-        });
-        if (language.getCheckedRadioButtonId()==R.id.chinese){
-            id = 0;
-        }else {
-            id = 1;
-        }
 
         CardView settingsButton = findViewById(R.id.cv_settings);
         settingsButton.setOnClickListener(v -> {
             Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
             startActivity(intent);
         });
+    }
 
-        View emptyView = findViewById(R.id.view_bg_empty);
-        emptyView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(Intent.ACTION_MAIN);
-                intent.addCategory(Intent.CATEGORY_HOME);
-                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                startActivity(intent);
+    private void setupListeners() {
+        sendButton.setOnClickListener(v -> {
+            String userInputText = userInput.getText().toString();
+            if (!userInputText.isEmpty()) {
+                addUserMessage(userInputText);
+                userInput.setText(""); // Clear input after sending
             }
         });
 
+        language.setOnCheckedChangeListener((group, checkedId) -> {
+            if (checkedId == R.id.chinese) {
+                id = 0;
+            } else {
+                id = 1;
+            }
+            VoiceUtil.wakeup(getApplicationContext(), id);
+        });
 
+        if (language.getCheckedRadioButtonId() == R.id.chinese) {
+            id = 0;
+        } else {
+            id = 1;
+        }
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        VoiceUtil.initKedaXun(getApplicationContext());
-        VoiceUtil.wakeup(getApplicationContext(),id);
-        RecognizerUtil.initAsr(getApplicationContext(),this);
+    private void addUserMessage(String message) {
+        TextView userMessage = new TextView(this);
+        userMessage.setText(message);
+        userMessage.setTextColor(getResources().getColor(R.color.black)); // Assuming you have a color resource for text
+        userMessage.setBackgroundResource(R.drawable.user_message_background); // Assuming you have a drawable for message background
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        params.gravity = Gravity.END;
+        params.topMargin = dpToPx(8); // Add top margin
+        userMessage.setLayoutParams(params);
+        chatList.addView(userMessage);
+        scrollToEnd();
+    }
+
+    private void addAssistantMessage(String message) {
+        TextView assistantMessage = new TextView(this);
+        assistantMessage.setText(message);
+        assistantMessage.setTextColor(getResources().getColor(R.color.black));
+        assistantMessage.setBackgroundResource(R.drawable.assistant_message_background);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        params.gravity = Gravity.START;
+        params.topMargin = dpToPx(8); // Add top margin
+        assistantMessage.setLayoutParams(params);
+        chatList.addView(assistantMessage);
+        scrollToEnd();
+    }
+
+    private int dpToPx(int dp) {
+        return (int) (dp * getResources().getDisplayMetrics().density);
+    }
+
+
+
+    private void scrollToEnd() {
+        scrollView.post(() -> scrollView.fullScroll(ScrollView.FOCUS_DOWN));
     }
 
     @Override
@@ -201,8 +201,10 @@ public class MainActivity extends AppCompatActivity implements EventListener {
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+    protected void onResume() {
+        super.onResume();
+        VoiceUtil.initKedaXun(getApplicationContext());
+        VoiceUtil.wakeup(getApplicationContext(), id);
+        RecognizerUtil.initAsr(getApplicationContext(), this);
     }
-
 }
