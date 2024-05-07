@@ -55,6 +55,7 @@ android {
     packagingOptions{
         doNotStrip "*/*/libvad.dnn.so"
         doNotStrip "*/*/libbd_easr_s1_merge_normal_20151216.dat.so"
+        exclude 'META-INF/DEPENDENCIES'
     }
 
 }
@@ -76,5 +77,6 @@ dependencies {
     // Java language implementation
     implementation libs.core
 
-
+    // Zhipu AI Java SDK
+    implementation libs.oapi.java.sdk
 }
