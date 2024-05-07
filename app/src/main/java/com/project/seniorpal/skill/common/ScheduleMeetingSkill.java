@@ -1,7 +1,9 @@
-package com.project.seniorpal.skill.accessibility;
+package com.project.seniorpal.skill.common;
 
 import android.content.Intent;
 import android.provider.CalendarContract;
+import com.project.seniorpal.skill.accessibility.AccessibilityOperator;
+import com.project.seniorpal.skill.accessibility.AccessibilitySkill;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -20,8 +22,8 @@ public final class ScheduleMeetingSkill extends AccessibilitySkill {
     }
 
     public ScheduleMeetingSkill(AccessibilityOperator operator) {
-        super("xyz.magicalstone.touchcontrol.ScheduleMeeting",
-                "Schedule a meeting with given parameters.", argsDesc,
+        super("com.project.seniorpal.ScheduleMeeting",
+                "Schedule a meeting with given title, location, description, period. Parameters can be shorten.", argsDesc,
                 operator);
     }
 

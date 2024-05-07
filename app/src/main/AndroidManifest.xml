@@ -101,7 +101,7 @@
                  android:process=":service"
                  android:stopWithTask="false">
             <intent-filter>
-                <action android:name="xyz.magicalstone.seniorpal.SkillProvider" />
+                <action android:name="com.project.seniorpal.SkillProvider" />
             </intent-filter>
         </service>
     </application>

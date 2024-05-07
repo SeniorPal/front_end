@@ -4,13 +4,14 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.view.accessibility.AccessibilityNodeInfo;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 public final class CheckWeatherSkill extends AccessibilitySkill {
 
     public CheckWeatherSkill(AccessibilityOperator operator) {
-        super("xyz.magicalstone.touchcontrol.CheckWeather", "Check today's weather.", null, operator);
+        super("com.project.seniorpal.CheckWeather", "Check today's weather.", Collections.EMPTY_MAP, operator);
     }
 
     @Override
