@@ -105,7 +105,7 @@ public class VoiceUtil {
                 buffer.append("【尾端点】" + object.optString("eos"));
                 resultString = buffer.toString();
                 Toast.makeText(context1,"唤醒成功",Toast.LENGTH_SHORT).show();
-            // bringAppToFront(context1);
+                bringAppToFront(context1);
                 RecognizerUtil.startAsr();
             } catch (JSONException e) {
                 resultString = "结果解析出错";
@@ -148,9 +148,9 @@ public class VoiceUtil {
         Log.d("chen", "resPath: " + resPath);
         return resPath;
     }
-//    private static void bringAppToFront(Context context) {
-//        Intent intent = new Intent(context, MainActivity.class);
-//        intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | Intent.FLAG_ACTIVITY_NEW_TASK);
-//        context.startActivity(intent);
-//    }
+   private static void bringAppToFront(Context context) {
+       Intent intent = new Intent(context, MainActivity.class);
+       intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | Intent.FLAG_ACTIVITY_NEW_TASK);
+       context.startActivity(intent);
+   }
 }
