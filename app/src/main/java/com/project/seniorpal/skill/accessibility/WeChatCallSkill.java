@@ -18,7 +18,7 @@ public final class WeChatCallSkill extends AccessibilitySkill {
     }
 
     public WeChatCallSkill(AccessibilityOperator operator) {
-        super("xyz.magicalstone.touchcontrol.WeChatCall", "Call a contact with WeChat.", argsDesc, operator);
+        super("com.project.seniorpal.WeChatCall", "Call a contact with WeChat.", argsDesc, operator);
     }
 
     @Override
