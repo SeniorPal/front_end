@@ -49,7 +49,7 @@ public class ServiceSkillCollector {
     }
 
     private void importSkills() {
-        List<ResolveInfo> listOfServices = currentContext.getPackageManager().queryIntentServices(new Intent("xyz.magicalstone.seniorpal.SkillProvider"), PackageManager.MATCH_ALL);
+        List<ResolveInfo> listOfServices = currentContext.getPackageManager().queryIntentServices(new Intent("com.project.seniorpal.SkillProvider"), PackageManager.MATCH_ALL);
         System.out.println(listOfServices);
         if (listOfServices.size() == 0) {
             return;
