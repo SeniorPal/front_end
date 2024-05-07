@@ -2,6 +2,8 @@ package com.project.seniorpal.skill.common;
 
 import android.content.Intent;
 import android.provider.CalendarContract;
+import com.project.seniorpal.skill.accessibility.AccessibilityOperator;
+import com.project.seniorpal.skill.accessibility.AccessibilitySkill;
 
 import java.util.Calendar;
 import java.util.HashMap;

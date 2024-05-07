@@ -2,6 +2,8 @@ package com.project.seniorpal.skill.common;
 
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import com.project.seniorpal.skill.accessibility.AccessibilityOperator;
+import com.project.seniorpal.skill.accessibility.AccessibilitySkill;
 
 import java.util.HashMap;
 import java.util.List;
@@ -32,7 +34,7 @@ public final class FindPackageNameSkill extends AccessibilitySkill {
     }
 
     private Map<String, String> findPackageName(String appName) {
-        PackageManager pm = operator.getContext().getPackageManager();
+        PackageManager pm = operator.getPackageManager();
         List<ApplicationInfo> apps = pm.getInstalledApplications(PackageManager.GET_META_DATA);
         Map<String, String> result = new HashMap<>();
 

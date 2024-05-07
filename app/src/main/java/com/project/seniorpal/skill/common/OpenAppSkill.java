@@ -2,6 +2,8 @@ package com.project.seniorpal.skill.common;
 
 import android.content.ComponentName;
 import android.content.Intent;
+import com.project.seniorpal.skill.accessibility.AccessibilityOperator;
+import com.project.seniorpal.skill.accessibility.AccessibilitySkill;
 
 import java.util.HashMap;
 import java.util.Map;
