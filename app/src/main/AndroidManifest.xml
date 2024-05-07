@@ -80,6 +80,30 @@
             android:exported="false">
             <!-- Meta-data, if any, can be added here -->
         </activity>
+        <service android:name=".skill.accessibility.AccessibilityOperator"
+                 android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+                 android:label="@string/accessibility"
+                 android:enabled="true"
+                 android:description="@string/app_name"
+                 android:exported="true"
+                 android:process=":service"
+                 android:stopWithTask="false">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data android:name="android.accessibilityservice" android:resource="@xml/accessibility" />
+        </service>
+        <service android:name=".skill.service.provider.ServiceSkillProviderImpl"
+                 android:label="@string/skill_provider"
+                 android:enabled="true"
+                 android:description="@string/app_name"
+                 android:exported="true"
+                 android:process=":service"
+                 android:stopWithTask="false">
+            <intent-filter>
+                <action android:name="xyz.magicalstone.seniorpal.SkillProvider" />
+            </intent-filter>
+        </service>
     </application>
 
 </manifest>
