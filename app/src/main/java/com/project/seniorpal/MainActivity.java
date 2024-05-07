@@ -49,6 +49,7 @@ public class MainActivity extends AppCompatActivity implements EventListener {
 
         initializeViews();
         setupListeners();
+        startForegroundService(this);  // 在适当的位置调用以启动前台服务
     }
 
     private void initializeViews() {
@@ -217,5 +218,25 @@ public class MainActivity extends AppCompatActivity implements EventListener {
         VoiceUtil.initKedaXun(getApplicationContext());
         VoiceUtil.wakeup(getApplicationContext(), id);
         RecognizerUtil.initAsr(getApplicationContext(), this);
+    }
+    
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        stopForegroundService(this);  // 在适当的位置调用以停止前台服务
+    }
+
+    public void startForegroundService(Context context) {
+        Intent serviceIntent = new Intent(context, ForegroundService.class);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            context.startForegroundService(serviceIntent);
+        } else {
+            context.startService(serviceIntent);
+        }
+    }
+
+    public void stopForegroundService(Context context) {
+        Intent serviceIntent = new Intent(context, ForegroundService.class);
+        context.stopService(serviceIntent);
     }
 }
