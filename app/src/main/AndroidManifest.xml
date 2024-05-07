@@ -37,6 +37,7 @@
 
     <uses-permission android:name="android.permission.SEND_SMS" />
     <uses-permission android:name="android.permission.RECEIVE_SMS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
 
     <application
@@ -51,6 +52,15 @@
         android:theme="@style/Theme.Voiceapp3"
         android:extractNativeLibs="true"
         tools:targetApi="31">
+
+        <service
+            android:name=".ForegroundService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.project.seniorpal.FOREGROUND_SERVICE" />
+            </intent-filter>
+        </service>
+        
         <activity
             android:name=".MainActivity"
             android:label="@string/app_name"
