@@ -7,6 +7,7 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
+import android.content.pm.ServiceInfo;
 import android.os.Build;
 import android.os.IBinder;
 import androidx.core.app.NotificationCompat;
@@ -24,12 +25,17 @@ public class ForegroundService extends Service {
     @SuppressLint("ForegroundServiceType")
     public int onStartCommand(Intent intent, int flags, int startId) {
         Notification notification = getNotification(); // 确保这个方法返回一个有效的通知对象
-        startForeground(NOTIFICATION_ID, notification);
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            startForeground(100, notification);
+        } else {
+            startForeground(100, notification,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE);
+        }
         return START_NOT_STICKY;
     }
 
 
-    private Notification getNotification() {
+    public Notification getNotification() {
         NotificationChannel channel = new NotificationChannel("channel_01", "Channel Name", NotificationManager.IMPORTANCE_DEFAULT);
         NotificationManager notificationManager = getSystemService(NotificationManager.class);
         notificationManager.createNotificationChannel(channel);

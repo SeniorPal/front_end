@@ -1,6 +1,7 @@
 package com.project.seniorpal;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
@@ -228,11 +229,7 @@ public class MainActivity extends AppCompatActivity implements EventListener {
 
     public void startForegroundService(Context context) {
         Intent serviceIntent = new Intent(context, ForegroundService.class);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            context.startForegroundService(serviceIntent);
-        } else {
-            context.startService(serviceIntent);
-        }
+        context.startForegroundService(serviceIntent);
     }
 
     public void stopForegroundService(Context context) {
