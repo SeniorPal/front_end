@@ -1,5 +1,7 @@
 package com.project.seniorpal.skill;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 public class CombinedSkillRegistry extends SkillRegistry {
@@ -36,5 +38,14 @@ public class CombinedSkillRegistry extends SkillRegistry {
     @Override
     public void registerSkill(Skill skill) {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Map<String, Skill> getAllSkillsIdToSkill() {
+        Map<String, Skill> allSkills = new HashMap<>();
+        for (SkillRegistry one : combinedRegistries) {
+            allSkills.putAll(one.getAllSkillsIdToSkill());
+        }
+        return allSkills;
     }
 }
