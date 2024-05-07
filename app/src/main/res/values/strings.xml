@@ -3,6 +3,8 @@
     <string name="default_greeting">Hello! What can I assist you with?</string>
     <string name="text_input_hint">Wakeup or Type!</string>
     <string name="settings">Settings</string>
+    <string name="accessibility">Provided functions such as simulated clicking.</string>
+    <string name="skill_provider">Provides skills for other apps to call.</string>
     <string-array name="theme_options">
         <item>Light</item>
         <item>Dark</item>
