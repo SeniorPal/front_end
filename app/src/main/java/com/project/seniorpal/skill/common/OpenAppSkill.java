@@ -2,8 +2,6 @@ package com.project.seniorpal.skill.common;
 
 import android.content.ComponentName;
 import android.content.Intent;
-import com.project.seniorpal.skill.accessibility.AccessibilityOperator;
-import com.project.seniorpal.skill.accessibility.AccessibilitySkill;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -19,24 +17,23 @@ public final class OpenAppSkill extends AccessibilitySkill {
     }
 
     public OpenAppSkill(AccessibilityOperator operator) {
-        super("com.project.seniorpal.OpenApp",
-                "Open an application with given parameters.", argsDesc,
+        super("xyz.magicalstone.touchcontrol.OpenApp", "Open an application with given parameters.", argsDesc,
                 operator);
     }
 
     @Override
     protected Map<String, String> active(Map<String, String> optimizedArgs) {
         try {
-            openApp(optimizedArgs);
+            openApp(optimizedArgs.get("packageName"), optimizedArgs.get("className"));
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
         return null;
     }
 
-    private void openApp(Map<String, String> args) throws InterruptedException {
+    private void openApp(String packageName, String className) throws InterruptedException {
         Intent intent = new Intent();
-        intent.setComponent(new ComponentName(args.get("packageName"), args.get("className")));
+        intent.setComponent(new ComponentName(packageName, className));
 
         System.out.println("Opening application.");
         operator.startActivity(intent);
