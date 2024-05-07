@@ -5,6 +5,7 @@ import android.provider.CalendarContract;
 import com.project.seniorpal.skill.accessibility.AccessibilityOperator;
 import com.project.seniorpal.skill.accessibility.AccessibilitySkill;
 
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -14,6 +15,7 @@ public final class ScheduleMeetingSkill extends AccessibilitySkill {
 
     static {
         argsDesc = new HashMap<>();
+        argsDesc.put("packageName", "Package name of the calendar app to use.");
         argsDesc.put("title", "Title of the meeting.");
         argsDesc.put("location", "Location of the meeting.");
         argsDesc.put("description", "Description of the meeting.");
@@ -22,29 +24,33 @@ public final class ScheduleMeetingSkill extends AccessibilitySkill {
     }
 
     public ScheduleMeetingSkill(AccessibilityOperator operator) {
-        super("com.project.seniorpal.ScheduleMeeting",
-                "Schedule a meeting with given title, location, description, period. Parameters can be shorten.", argsDesc,
+        super("xyz.magicalstone.touchcontrol. ScheduleMeeting", "Schedule a meeting with given parameters.", argsDesc,
                 operator);
     }
 
     @Override
     protected Map<String, String> active(Map<String, String> optimizedArgs) {
         try {
-            scheduleMeeting(optimizedArgs);
+            scheduleMeeting(optimizedArgs.get("packageName"), optimizedArgs.get("title"), optimizedArgs.get("location"),
+                    optimizedArgs.get("description"), optimizedArgs.get("startDateTime"),
+                    optimizedArgs.get("endDateTime"));
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
         return null;
     }
 
-    private void scheduleMeeting(Map<String, String> args) throws InterruptedException {
+    private void scheduleMeeting(String packageName, String title, String location, String description,
+            String startDateTime, String endDateTime) throws InterruptedException {
         Intent intent = new Intent(Intent.ACTION_INSERT);
         intent.setData(CalendarContract.Events.CONTENT_URI);
-        intent.putExtra(CalendarContract.Events.TITLE, args.get("title"));
-        intent.putExtra(CalendarContract.Events.EVENT_LOCATION, args.get("location"));
-        intent.putExtra(CalendarContract.Events.DESCRIPTION, args.get("description"));
-        intent.putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, Long.parseLong(args.get("startDateTime")));
-        intent.putExtra(CalendarContract.EXTRA_EVENT_END_TIME, Long.parseLong(args.get("endDateTime")));
+        intent.putExtra(CalendarContract.Events.TITLE, title);
+        intent.putExtra(CalendarContract.Events.EVENT_LOCATION, location);
+        intent.putExtra(CalendarContract.Events.DESCRIPTION, description);
+        intent.putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, Long.parseLong(startDateTime));
+        intent.putExtra(CalendarContract.EXTRA_EVENT_END_TIME, Long.parseLong(endDateTime));
+
+        intent.setPackage(packageName); // Set the package name of the calendar app to use
 
         System.out.println("Scheduling meeting.");
         operator.startActivity(intent);

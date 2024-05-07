@@ -1,58 +1,39 @@
 package com.project.seniorpal.skill.accessibility;
 
-import android.content.ComponentName;
 import android.content.Intent;
-import android.view.accessibility.AccessibilityNodeInfo;
 
-import java.util.Collections;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 
 public final class CheckWeatherSkill extends AccessibilitySkill {
 
+    private static final Map<String, String> argsDesc;
+
+    static {
+        argsDesc = new HashMap<>();
+        argsDesc.put("packageName", "Package name of the weather app to use.");
+        argsDesc.put("city", "The city to check the weather for.");
+    }
+
     public CheckWeatherSkill(AccessibilityOperator operator) {
-        super("com.project.seniorpal.CheckWeather", "Check today's weather.", Collections.EMPTY_MAP, operator);
+        super("xyz.magicalstone.touchcontrol.CheckWeather", "Check today's weather in a specified city.", argsDesc,
+                operator);
     }
 
     @Override
     protected Map<String, String> active(Map<String, String> optimizedArgs) {
         try {
-            checkWeather();
+            checkWeather(optimizedArgs.get("packageName"), optimizedArgs.get("city"));
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
         return null;
     }
 
-    private void checkWeather() throws InterruptedException {
-        openWeatherApp();
-        String weatherInfo = getWeatherInfo();
-        System.out.println("Today's weather: " + weatherInfo);
-    }
-
-    private void openWeatherApp() throws InterruptedException {
-        System.out.println("Opening weather application.");
+    private void checkWeather(String packageName, String city) throws InterruptedException {
         Intent intent = new Intent();
-        intent.setComponent(new ComponentName("com.example.weather", "com.example.weather.MainActivity"));
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        operator.startActivity(intent);
-        System.out.println("Weather application opened.");
-    }
-
-    private String getWeatherInfo() throws InterruptedException {
-        Thread.sleep(2000); // Assuming it takes some time for the app to load the weather data
-        System.out.println("Fetching weather information.");
-        AccessibilityNodeInfo rootNode = operator.getRootInActiveWindow();
-        List<AccessibilityNodeInfo> weatherNodes = rootNode
-                .findAccessibilityNodeInfosByViewId("com.example.weather:id/weather_info");
-
-        if (!weatherNodes.isEmpty() && weatherNodes.get(0) != null) {
-            String weatherInfo = weatherNodes.get(0).getText().toString();
-            System.out.println("Weather information fetched.");
-            return weatherInfo;
-        } else {
-            System.out.println("Failed to fetch weather information.");
-            return "No weather information available";
-        }
+        intent.setPackage(packageName); // Set the package name of the weather app to use
+        // Additional logic to check weather using the specified weather app
+        System.out.println("Checking weather for " + city + " using " + packageName);
     }
 }

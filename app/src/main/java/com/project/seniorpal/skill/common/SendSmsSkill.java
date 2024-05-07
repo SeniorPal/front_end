@@ -14,29 +14,31 @@ public final class SendSmsSkill extends AccessibilitySkill {
 
     static {
         argsDesc = new HashMap<>();
+        argsDesc.put("packageName", "Package name of the SMS application to use.");
         argsDesc.put("phoneNumber", "Phone number to send the SMS to.");
         argsDesc.put("message", "Message content of the SMS.");
     }
 
     public SendSmsSkill(AccessibilityOperator operator) {
-        super("com.project.seniorpal.SendSms", "Send an SMS with given phone number and message content.",
-                argsDesc, operator);
+        super("xyz.magicalstone.touchcontrol.SendSms", "Send an SMS with given parameters.", argsDesc, operator);
     }
 
     @Override
     protected Map<String, String> active(Map<String, String> optimizedArgs) {
         try {
-            sendSms(optimizedArgs);
+            sendSms(optimizedArgs.get("packageName"), optimizedArgs.get("phoneNumber"), optimizedArgs.get("message"));
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
         return null;
     }
 
-    private void sendSms(Map<String, String> args) throws InterruptedException {
+    private void sendSms(String packageName, String phoneNumber, String message) throws InterruptedException {
         Intent intent = new Intent(Intent.ACTION_VIEW);
-        intent.setData(Uri.parse("sms:" + args.get("phoneNumber")));
-        intent.putExtra("sms_body", args.get("message"));
+        intent.setData(Uri.parse("sms:" + phoneNumber));
+        intent.putExtra("sms_body", message);
+
+        intent.setPackage(packageName); // Set the package name of the SMS app to use
 
         System.out.println("Sending SMS.");
         operator.startActivity(intent);
