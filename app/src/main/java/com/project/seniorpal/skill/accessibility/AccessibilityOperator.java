@@ -4,6 +4,8 @@ import android.accessibilityservice.AccessibilityGestureEvent;
 import android.accessibilityservice.AccessibilityService;
 import android.accessibilityservice.AccessibilityServiceInfo;
 import android.accessibilityservice.GestureDescription;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Path;
 import android.graphics.Rect;
 import android.view.accessibility.AccessibilityEvent;
@@ -26,12 +28,18 @@ public class AccessibilityOperator extends AccessibilityService {
     public void onCreate() {
         super.onCreate();
         serviceInstance = this;
+        SharedPreferences.Editor editor = getSharedPreferences("main", Context.MODE_PRIVATE).edit();
+        editor.putBoolean("accessibilityServiceActive", true);
+        editor.commit();
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
         serviceInstance = null;
+        SharedPreferences.Editor editor = getSharedPreferences("main", Context.MODE_PRIVATE).edit();
+        editor.putBoolean("accessibilityServiceActive", false);
+        editor.commit();
     }
 
     @Override
