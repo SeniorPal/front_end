@@ -3,8 +3,11 @@ package com.project.seniorpal;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.StrictMode;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
@@ -22,10 +25,25 @@ import androidx.core.app.ActivityCompat;
 
 import com.baidu.speech.EventListener;
 import com.baidu.speech.asr.SpeechConstant;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.theokanning.openai.client.OpenAiApi;
+import com.theokanning.openai.completion.chat.ChatCompletionRequest;
+import com.theokanning.openai.completion.chat.ChatMessage;
+import com.theokanning.openai.completion.chat.ChatMessageRole;
+import com.theokanning.openai.service.OpenAiService;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import io.reactivex.Scheduler;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import retrofit2.Retrofit;
 
 public class MainActivity extends AppCompatActivity implements EventListener {
 
@@ -41,6 +59,14 @@ public class MainActivity extends AppCompatActivity implements EventListener {
 
     private int id;
 
+    private static final String API_KEY = "d5dacc4004179f93decc2dc575684063.6SWx2S0VOptED02R";
+
+    private OpenAiService openAiService;
+
+    private List<ChatMessage> messages;
+
+    private Handler handler;
+
     @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,8 +75,12 @@ public class MainActivity extends AppCompatActivity implements EventListener {
         requestPermissions();
 
         initializeViews();
+        initZhipuAIClient();
         setupListeners();
         startForegroundService(this);  // 在适当的位置调用以启动前台服务
+        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+        handler = new Handler();
+        StrictMode.setThreadPolicy(policy);
     }
 
     private void initializeViews() {
@@ -87,6 +117,8 @@ public class MainActivity extends AppCompatActivity implements EventListener {
                 addUserMessage(userInputText);
                 userInput.setText(""); // Clear input after sending
             }
+            // Chat with LLM
+            chatWithAssistantStream(userInputText);
         });
 
         language.setOnCheckedChangeListener((group, checkedId) -> {
@@ -105,7 +137,72 @@ public class MainActivity extends AppCompatActivity implements EventListener {
         }
     }
 
-    private void addUserMessage(String message) {
+    /**
+     * Initialize the Zhipu AI client
+     */
+    private void initZhipuAIClient() {
+        // Initialize the OpenAI Service
+        // Ref: https://github.com/TheoKanning/openai-java?tab=readme-ov-file#customizing-openaiservice
+        ObjectMapper mapper = OpenAiService.defaultObjectMapper();
+        OkHttpClient client = OpenAiService.defaultClient(API_KEY, Duration.ofSeconds(30))
+                .newBuilder()
+                .addInterceptor(chain -> {
+                    Request request = chain.request();
+                    if (request.url().url().toString().contains("api.openai.com/v1")) {
+                        request = request.newBuilder()
+                                .url(request.url().url().toString().replace("api.openai.com/v1", "open.bigmodel.cn/api/paas/v4"))
+                                .build();
+                    }
+                    return chain.proceed(request);
+                }).build();
+        Retrofit retrofit = OpenAiService.defaultRetrofit(client, mapper);
+        OpenAiApi api = retrofit.create(OpenAiApi.class);
+        openAiService = new OpenAiService(api);
+
+        // Initialize the messages list
+        messages = new ArrayList<>();
+    }
+
+    private void chatWithAssistant(String userInput) {
+        ChatMessage chatMessage = new ChatMessage(ChatMessageRole.USER.value(), userInput);
+        messages.add(chatMessage);
+        ChatCompletionRequest chatCompletionRequest = ChatCompletionRequest
+                .builder()
+                .model("glm-4")
+                .messages(messages)
+                .build();
+        TextView assMsg = addAssistantMessage("Please wait");
+        String response = openAiService.createChatCompletion(chatCompletionRequest)
+                .getChoices().get(0).getMessage().getContent();
+        assMsg.setText(response);
+    }
+
+    private void chatWithAssistantStream(String userInput) {
+        ChatMessage chatMessage = new ChatMessage(ChatMessageRole.USER.value(), userInput);
+        messages.add(chatMessage);
+        ChatCompletionRequest chatCompletionRequest = ChatCompletionRequest
+                .builder()
+                .model("glm-4")
+                .messages(messages)
+                .build();
+        TextView assMsg = addAssistantMessage("Please wait");
+        AtomicBoolean isFirst = new AtomicBoolean(true);
+        openAiService.streamChatCompletion(chatCompletionRequest)
+                .doOnError(throwable -> {
+                    assMsg.setText("Error: " + throwable.getMessage());
+                    assMsg.setTextColor(Color.RED);
+                })
+                .forEach(chatCompletionChunk -> {
+                    handler.post(() -> {
+                        if (isFirst.getAndSet(false)) {
+                            assMsg.setText("");
+                        }
+                        assMsg.append(chatCompletionChunk.getChoices().get(0).getMessage().getContent());
+                    });
+                });
+    }
+
+    private TextView addUserMessage(String message) {
         TextView userMessage = new TextView(this);
         userMessage.setText(message);
         userMessage.setTextColor(getResources().getColor(R.color.black)); // Assuming you have a color resource for text
@@ -116,9 +213,10 @@ public class MainActivity extends AppCompatActivity implements EventListener {
         userMessage.setLayoutParams(params);
         chatList.addView(userMessage);
         scrollToEnd();
+        return userMessage;
     }
 
-    private void addAssistantMessage(String message) {
+    private TextView addAssistantMessage(String message) {
         TextView assistantMessage = new TextView(this);
         assistantMessage.setText(message);
         assistantMessage.setTextColor(getResources().getColor(R.color.black));
@@ -129,6 +227,7 @@ public class MainActivity extends AppCompatActivity implements EventListener {
         assistantMessage.setLayoutParams(params);
         chatList.addView(assistantMessage);
         scrollToEnd();
+        return assistantMessage;
     }
 
     private int dpToPx(int dp) {

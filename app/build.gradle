@@ -55,6 +55,7 @@ android {
     packagingOptions{
         doNotStrip "*/*/libvad.dnn.so"
         doNotStrip "*/*/libbd_easr_s1_merge_normal_20151216.dat.so"
+        exclude 'META-INF/DEPENDENCIES'
     }
 
 }
@@ -71,10 +72,10 @@ dependencies {
     androidTestImplementation libs.ext.junit
     androidTestImplementation libs.espresso.core
 
-    def core_version = "1.13.1"
-
     // Java language implementation
     implementation libs.core
 
+    // OpenAI Java SDK
+    implementation libs.openai.service
 
 }
