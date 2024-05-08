@@ -10,6 +10,8 @@ activity = "1.8.0"
 constraintlayout = "2.1.4"
 oapiJavaSdk = "release-V4-2.0.2"
 preference = "1.2.1"
+openAIService = "0.18.2"
+slf4jAndroid = "2.0.7-0"
 
 [libraries]
 core = { module = "androidx.core:core", version.ref = "core" }
@@ -22,6 +24,8 @@ activity = { group = "androidx.activity", name = "activity", version.ref = "acti
 constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 oapi-java-sdk = { module = "cn.bigmodel.openapi:oapi-java-sdk", version.ref = "oapiJavaSdk" }
 preference = { group = "androidx.preference", name = "preference", version.ref = "preference" }
+openai-service = { module = "com.theokanning.openai-gpt3-java:service", version.ref = "openAIService" }
+slf4j-android = { module = "uk.uuid.slf4j:slf4j-android", version.ref = "slf4jAndroid" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
