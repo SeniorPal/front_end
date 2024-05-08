@@ -1,6 +1,7 @@
 package com.project.seniorpal.skill.service.provider;
 
 import android.os.RemoteException;
+import android.util.Log;
 import com.project.seniorpal.skill.Skill;
 import com.project.seniorpal.skill.service.ISkillProvider;
 import com.project.seniorpal.skill.service.util.SkillDataWrapper;
@@ -36,6 +37,7 @@ public class ServiceSkillHandler extends ISkillProvider.Stub {
             try {
                 return targetSkill.active(skillData.args, activatorType);
             } catch (Exception e) {
+                Log.i("Skill", e.getMessage());
                 return null;
             }
         }

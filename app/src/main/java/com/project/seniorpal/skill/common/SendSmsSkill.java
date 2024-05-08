@@ -16,34 +16,29 @@ public final class SendSmsSkill extends ContextSkill {
 
     static {
         argsDesc = new HashMap<>();
-        argsDesc.put("packageName", "Package name of the SMS application to use.");
-        argsDesc.put("phoneNumber", "Phone number to send the SMS to.");
+        argsDesc.put("phoneNumber", "Phone number to send the SMS to. (number)");
         argsDesc.put("message", "Message content of the SMS.");
     }
 
     public SendSmsSkill(Context operator) {
-        super("xyz.magicalstone.touchcontrol.SendSms", "Send an SMS with given parameters.", argsDesc, operator);
+        super("com.project.seniorpal.SendSms", "Send an SMS with a phone number and a message.", argsDesc, operator);
     }
 
     @Override
     protected Map<String, String> active(Map<String, String> optimizedArgs) {
         try {
-            sendSms(optimizedArgs.get("packageName"), optimizedArgs.get("phoneNumber"), optimizedArgs.get("message"));
+            sendSms(optimizedArgs.get("phoneNumber"), optimizedArgs.get("message"));
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
         return null;
     }
 
-    private void sendSms(String packageName, String phoneNumber, String message) throws InterruptedException {
-        Intent intent = new Intent(Intent.ACTION_VIEW);
-        intent.setData(Uri.parse("sms:" + phoneNumber));
-        intent.putExtra("sms_body", message);
-
-        intent.setPackage(packageName); // Set the package name of the SMS app to use
-
-        System.out.println("Sending SMS.");
-        context.startActivity(intent);
-        System.out.println("SMS sent.");
+    private void sendSms(String phoneNumber, String message) throws InterruptedException {
+        Intent sendIntent = new Intent(Intent.ACTION_SENDTO);
+        sendIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        sendIntent.setData(Uri.parse("smsto:" + phoneNumber));
+        sendIntent.putExtra("sms_body", message);
+        context.startActivity(sendIntent);
     }
 }

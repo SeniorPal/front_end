@@ -1,46 +1,54 @@
 package com.project.seniorpal.skill.common;
 
-import android.content.ComponentName;
-import android.content.Context;
-import android.content.Intent;
-import com.project.seniorpal.skill.ContextSkill;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
 import com.project.seniorpal.skill.accessibility.AccessibilityOperator;
 import com.project.seniorpal.skill.accessibility.AccessibilitySkill;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-public final class OpenAppSkill extends ContextSkill {
+public final class OpenAppSkill extends AccessibilitySkill {
 
     private static final Map<String, String> argsDesc;
 
     static {
         argsDesc = new HashMap<>();
-        argsDesc.put("packageName", "Package name of the application to open.");
-        argsDesc.put("className", "Class name of the main activity to open.");
+        argsDesc.put("appName", "The name of the application.");
     }
 
-    public OpenAppSkill(Context operator) {
-        super("xyz.magicalstone.touchcontrol.OpenApp", "Open an application with given parameters.", argsDesc,
-                operator);
+    public OpenAppSkill(AccessibilityOperator operator) {
+        super("xyz.magicalstone.touchcontrol.FindPackage", "Open an application.",
+                argsDesc, operator);
     }
 
     @Override
     protected Map<String, String> active(Map<String, String> optimizedArgs) {
         try {
-            openApp(optimizedArgs.get("packageName"), optimizedArgs.get("className"));
-        } catch (InterruptedException e) {
+            String appName = optimizedArgs.getOrDefault("appName", "");
+            return findPackageName(appName);
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        return null;
     }
 
-    private void openApp(String packageName, String className) throws InterruptedException {
-        Intent intent = new Intent();
-        intent.setComponent(new ComponentName(packageName, className));
+    private Map<String, String> findPackageName(String appName) {
+        PackageManager pm = operator.getPackageManager();
+        List<ApplicationInfo> apps = pm.getInstalledApplications(PackageManager.GET_META_DATA);
+        Map<String, String> result = new HashMap<>();
 
-        System.out.println("Opening application.");
-        context.startActivity(intent);
-        System.out.println("Application opened.");
+        for (ApplicationInfo app : apps) {
+            String name = pm.getApplicationLabel(app).toString();
+            if (appName.equalsIgnoreCase(name)) {
+                result.put("packageName", app.packageName);
+                System.out.println("Found package: " + app.packageName + " for application: " + name);
+                return result;
+            }
+        }
+
+        System.out.println("No package found for application: " + appName);
+        result.put("packageName", "No package found");
+        return result;
     }
 }
