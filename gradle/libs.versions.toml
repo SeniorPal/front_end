@@ -11,6 +11,7 @@ constraintlayout = "2.1.4"
 oapiJavaSdk = "release-V4-2.0.2"
 preference = "1.2.1"
 openAIService = "0.18.2"
+rxandroid = "2.1.1"
 slf4jAndroid = "2.0.7-0"
 
 [libraries]
@@ -25,6 +26,7 @@ constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayo
 oapi-java-sdk = { module = "cn.bigmodel.openapi:oapi-java-sdk", version.ref = "oapiJavaSdk" }
 preference = { group = "androidx.preference", name = "preference", version.ref = "preference" }
 openai-service = { module = "com.theokanning.openai-gpt3-java:service", version.ref = "openAIService" }
+rxandroid = { module = "io.reactivex.rxjava2:rxandroid", version.ref = "rxandroid" }
 slf4j-android = { module = "uk.uuid.slf4j:slf4j-android", version.ref = "slf4jAndroid" }
 
 [plugins]

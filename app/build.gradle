@@ -78,4 +78,7 @@ dependencies {
     // OpenAI Java SDK
     implementation libs.openai.service
 
+    // RxAndroid
+    implementation libs.rxandroid
+
 }

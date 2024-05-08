@@ -27,6 +27,7 @@ import com.baidu.speech.EventListener;
 import com.baidu.speech.asr.SpeechConstant;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.theokanning.openai.client.OpenAiApi;
+import com.theokanning.openai.completion.chat.ChatCompletionChunk;
 import com.theokanning.openai.completion.chat.ChatCompletionRequest;
 import com.theokanning.openai.completion.chat.ChatMessage;
 import com.theokanning.openai.completion.chat.ChatMessageRole;
@@ -34,13 +35,21 @@ import com.theokanning.openai.service.OpenAiService;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.reactivestreams.Subscription;
 
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import io.reactivex.Flowable;
+import io.reactivex.FlowableSubscriber;
+import io.reactivex.Observable;
 import io.reactivex.Scheduler;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.schedulers.Schedulers;
+import io.reactivex.subscribers.DisposableSubscriber;
+import kotlinx.coroutines.flow.Flow;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import retrofit2.Retrofit;
@@ -58,6 +67,10 @@ public class MainActivity extends AppCompatActivity implements EventListener {
     private ImageButton sendButton;
 
     private int id;
+
+    private static final String OPENAI_BASE = "api.openai.com/v1";
+
+    private static final String ZHIPU_AI_BASE = "open.bigmodel.cn/api/paas/v4";
 
     private static final String API_KEY = "d5dacc4004179f93decc2dc575684063.6SWx2S0VOptED02R";
 
@@ -78,9 +91,9 @@ public class MainActivity extends AppCompatActivity implements EventListener {
         initZhipuAIClient();
         setupListeners();
         startForegroundService(this);  // 在适当的位置调用以启动前台服务
-        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+//        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+//        StrictMode.setThreadPolicy(policy);
         handler = new Handler();
-        StrictMode.setThreadPolicy(policy);
     }
 
     private void initializeViews() {
@@ -148,9 +161,9 @@ public class MainActivity extends AppCompatActivity implements EventListener {
                 .newBuilder()
                 .addInterceptor(chain -> {
                     Request request = chain.request();
-                    if (request.url().url().toString().contains("api.openai.com/v1")) {
+                    if (request.url().url().toString().contains(OPENAI_BASE)) {
                         request = request.newBuilder()
-                                .url(request.url().url().toString().replace("api.openai.com/v1", "open.bigmodel.cn/api/paas/v4"))
+                                .url(request.url().url().toString().replace(OPENAI_BASE, ZHIPU_AI_BASE))
                                 .build();
                     }
                     return chain.proceed(request);
@@ -177,6 +190,7 @@ public class MainActivity extends AppCompatActivity implements EventListener {
         assMsg.setText(response);
     }
 
+    @SuppressLint("CheckResult")
     private void chatWithAssistantStream(String userInput) {
         ChatMessage chatMessage = new ChatMessage(ChatMessageRole.USER.value(), userInput);
         messages.add(chatMessage);
@@ -187,19 +201,55 @@ public class MainActivity extends AppCompatActivity implements EventListener {
                 .build();
         TextView assMsg = addAssistantMessage("Please wait");
         AtomicBoolean isFirst = new AtomicBoolean(true);
-        openAiService.streamChatCompletion(chatCompletionRequest)
-                .doOnError(throwable -> {
-                    assMsg.setText("Error: " + throwable.getMessage());
-                    assMsg.setTextColor(Color.RED);
-                })
-                .forEach(chatCompletionChunk -> {
-                    handler.post(() -> {
+        Flowable<ChatCompletionChunk> flowable = openAiService.streamChatCompletion(chatCompletionRequest)
+                .subscribeOn(Schedulers.io());
+        openAiService.mapStreamToAccumulator(flowable)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .doOnNext(accumulator -> {
+                    if (accumulator.isFunctionCall()) {
                         if (isFirst.getAndSet(false)) {
+                            System.out.println("Executing function " + accumulator.getAccumulatedChatFunctionCall().getName() + "...");
+                        }
+                    } else {
+                        if (isFirst.getAndSet(false)) {
+                            Log.i("Chat", "Cleared message hint");
                             assMsg.setText("");
                         }
-                        assMsg.append(chatCompletionChunk.getChoices().get(0).getMessage().getContent());
-                    });
-                });
+                        if (accumulator.getMessageChunk().getContent() != null) {
+                            Log.i("Chat", "Received chunk: " + accumulator.getMessageChunk().getContent());
+                            assMsg.append(accumulator.getMessageChunk().getContent());
+                        }
+                    }
+                })
+                .doOnComplete(() -> {
+                    Log.i("Chat", "Chat completed");
+                })
+                .lastElement()
+                .subscribeOn(Schedulers.io())
+                .doAfterSuccess(accumulator -> {
+                    messages.add(accumulator.getAccumulatedMessage());
+                }).subscribe();
+//        openAiService.streamChatCompletion(chatCompletionRequest)
+//                .observeOn(AndroidSchedulers.mainThread())
+//                .subscribeOn(Schedulers.io())
+//                .doOnSubscribe(subscription -> {
+//                    Log.i("Chat", "Chat started");
+//                })
+//                .doOnNext(chunk -> {
+//                    if (isFirst.getAndSet(false)) {
+//                        assMsg.setText("");
+//                    }
+//                    Log.i("Chat", "Received chunk: " + chunk.getChoices().get(0).getMessage().getContent());
+//                    assMsg.append(chunk.getChoices().get(0).getMessage().getContent());
+//                })
+//                .doOnError(throwable -> {
+//                    Log.e("Chat", "An error occurred: " + throwable.getMessage());
+//                    assMsg.setText("An error occurred: " + throwable.getMessage());
+//                })
+//                .doOnComplete(() -> {
+//                    Log.i("Chat", "Chat completed");
+//                }).subscribe();
     }
 
     private TextView addUserMessage(String message) {
