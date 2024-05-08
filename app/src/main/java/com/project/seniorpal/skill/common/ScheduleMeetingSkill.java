@@ -1,7 +1,9 @@
 package com.project.seniorpal.skill.common;
 
+import android.content.Context;
 import android.content.Intent;
 import android.provider.CalendarContract;
+import com.project.seniorpal.skill.ContextSkill;
 import com.project.seniorpal.skill.accessibility.AccessibilityOperator;
 import com.project.seniorpal.skill.accessibility.AccessibilitySkill;
 
@@ -9,7 +11,7 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 
-public final class ScheduleMeetingSkill extends AccessibilitySkill {
+public final class ScheduleMeetingSkill extends ContextSkill {
 
     private static final Map<String, String> argsDesc;
 
@@ -23,8 +25,8 @@ public final class ScheduleMeetingSkill extends AccessibilitySkill {
         argsDesc.put("endDateTime", "End time of the meeting in milliseconds.");
     }
 
-    public ScheduleMeetingSkill(AccessibilityOperator operator) {
-        super("xyz.magicalstone.touchcontrol. ScheduleMeeting", "Schedule a meeting with given parameters.", argsDesc,
+    public ScheduleMeetingSkill(Context operator) {
+        super("com.project.seniorpal.ScheduleMeeting", "Schedule a meeting with given parameters.", argsDesc,
                 operator);
     }
 
@@ -53,7 +55,7 @@ public final class ScheduleMeetingSkill extends AccessibilitySkill {
         intent.setPackage(packageName); // Set the package name of the calendar app to use
 
         System.out.println("Scheduling meeting.");
-        operator.startActivity(intent);
+        context.startActivity(intent);
         System.out.println("Meeting scheduled.");
     }
 }

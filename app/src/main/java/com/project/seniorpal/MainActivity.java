@@ -26,6 +26,9 @@ import androidx.core.app.ActivityCompat;
 import com.baidu.speech.EventListener;
 import com.baidu.speech.asr.SpeechConstant;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.project.seniorpal.skill.CombinedSkillRegistry;
+import com.project.seniorpal.skill.SkillRegistry;
+import com.project.seniorpal.skill.service.collector.ServiceSkillCollector;
 import com.theokanning.openai.client.OpenAiApi;
 import com.theokanning.openai.completion.chat.ChatCompletionChunk;
 import com.theokanning.openai.completion.chat.ChatCompletionRequest;
@@ -40,6 +43,8 @@ import org.reactivestreams.Subscription;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.reactivex.Flowable;
@@ -82,6 +87,9 @@ public class MainActivity extends AppCompatActivity implements EventListener {
 
     private Handler handler;
 
+    private ServiceSkillCollector serviceSkillCollector;
+    private SkillRegistry allSkills;
+
     @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -92,10 +100,27 @@ public class MainActivity extends AppCompatActivity implements EventListener {
         initializeViews();
         initZhipuAIClient();
         setupListeners();
+        serviceSkillCollector = new ServiceSkillCollector(this);
+        Future<Void> future = serviceSkillCollector.importAllSkills();
+        allSkills = new CombinedSkillRegistry(serviceSkillCollector.importedSkills, SkillRegistry.localRegistry);
+
         startForegroundService(this);  // 在适当的位置调用以启动前台服务
 //        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
 //        StrictMode.setThreadPolicy(policy);
         handler = new Handler();
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        ChatMessage initial = messages.get(0);
+        messages.clear();
+        messages.add(initial);
     }
 
     private void initializeViews() {

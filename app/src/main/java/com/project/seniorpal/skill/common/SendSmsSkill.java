@@ -1,14 +1,16 @@
 package com.project.seniorpal.skill.common;
 
+import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+import com.project.seniorpal.skill.ContextSkill;
 import com.project.seniorpal.skill.accessibility.AccessibilityOperator;
 import com.project.seniorpal.skill.accessibility.AccessibilitySkill;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public final class SendSmsSkill extends AccessibilitySkill {
+public final class SendSmsSkill extends ContextSkill {
 
     private static final Map<String, String> argsDesc;
 
@@ -19,7 +21,7 @@ public final class SendSmsSkill extends AccessibilitySkill {
         argsDesc.put("message", "Message content of the SMS.");
     }
 
-    public SendSmsSkill(AccessibilityOperator operator) {
+    public SendSmsSkill(Context operator) {
         super("xyz.magicalstone.touchcontrol.SendSms", "Send an SMS with given parameters.", argsDesc, operator);
     }
 
@@ -41,7 +43,7 @@ public final class SendSmsSkill extends AccessibilitySkill {
         intent.setPackage(packageName); // Set the package name of the SMS app to use
 
         System.out.println("Sending SMS.");
-        operator.startActivity(intent);
+        context.startActivity(intent);
         System.out.println("SMS sent.");
     }
 }
