@@ -1,5 +1,9 @@
 package com.project.seniorpal.skill;
 
+import android.os.Parcel;
+import android.os.Parcelable;
+import androidx.annotation.NonNull;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -11,8 +15,30 @@ import java.util.Objects;
  */
 public abstract class Skill {
 
-    public enum ActivatorType {
-        NON_AI, GPT
+    public enum ActivatorType implements Parcelable {
+        NON_AI, GPT;
+
+        public static final Creator<ActivatorType> CREATOR = new Creator<ActivatorType>() {
+            @Override
+            public ActivatorType createFromParcel(Parcel in) {
+                return ActivatorType.values()[in.readInt()];
+            }
+
+            @Override
+            public ActivatorType[] newArray(int size) {
+                return new ActivatorType[size];
+            }
+        };
+
+        @Override
+        public int describeContents() {
+            return 0;
+        }
+
+        @Override
+        public void writeToParcel(@NonNull Parcel dest, int flags) {
+            dest.writeInt(ordinal());
+        }
     }
 
     /**
@@ -51,7 +77,14 @@ public abstract class Skill {
      */
     public Map<String, String> active(Map<String, String> args, ActivatorType activatorType) {
         //TODO If the activator isn't NON_AI, check and fix args if necessary.
-        return active(args);
+        Map<String, String> res = active(args);
+        if (res == null) {
+            res = new HashMap<>();
+            res.put("succeed", Boolean.toString(true));
+        } else {
+            res.putIfAbsent("succeed", Boolean.toString(true));
+        }
+        return res;
     }
 
     /**

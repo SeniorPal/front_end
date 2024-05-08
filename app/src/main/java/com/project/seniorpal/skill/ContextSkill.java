@@ -1,7 +1,6 @@
 package com.project.seniorpal.skill;
 
 import android.content.Context;
-import com.project.seniorpal.skill.accessibility.AccessibilityOperator;
 
 import java.util.Map;
 
@@ -9,15 +8,15 @@ import java.util.Map;
  * A skill requires but only requires for context should be an ContextSkill. Otherwise, it should not be an ContextSkill.
  */
 public abstract class ContextSkill extends Skill {
-    protected Context operator;
+    protected Context context;
 
-    public ContextSkill(String id, String desc, Map<String, String> argsDesc, Context operator) {
+    public ContextSkill(String id, String desc, Map<String, String> argsDesc, Context context) {
         super(id, desc, argsDesc);
-        this.operator = operator;
+        this.context = context;
     }
 
-    public void setContext(Context newOperator) {
-        this.operator = newOperator;
+    public void setContext(Context newContext) {
+        this.context = newContext;
     }
 
 }

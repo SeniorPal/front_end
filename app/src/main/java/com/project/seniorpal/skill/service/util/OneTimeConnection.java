@@ -7,25 +7,26 @@ import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
 
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+
 public class OneTimeConnection implements ServiceConnection {
+    private BiConsumer<ComponentName, IBinder> callback;
 
-    private final Messenger receiver;
-    private final Message message;
+    public OneTimeConnection(BiConsumer<ComponentName, IBinder> callback) {
+        this.callback = callback;
+    }
 
-    public OneTimeConnection(Messenger receiver, Message message) {
-        this.receiver = receiver;
-        this.message = message;
+    public OneTimeConnection() {
+    }
+
+    public void setCallback(BiConsumer<ComponentName, IBinder> callback) {
+        this.callback = callback;
     }
 
     @Override
     public void onServiceConnected(ComponentName name, IBinder service) {
-        Messenger sender = new Messenger(service);
-        message.replyTo = receiver;
-        try {
-            sender.send(message);
-        } catch (RemoteException e) {
-            throw new RuntimeException(e);
-        }
+        callback.accept(name, service);
     }
 
     @Override

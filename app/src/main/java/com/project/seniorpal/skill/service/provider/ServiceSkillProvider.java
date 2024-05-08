@@ -3,12 +3,8 @@ package com.project.seniorpal.skill.service.provider;
 import android.app.Service;
 import android.content.Intent;
 import android.os.*;
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import com.project.seniorpal.skill.SkillRegistry;
-import com.project.seniorpal.skill.service.util.ServiceMessageType;
-import com.project.seniorpal.skill.service.util.SkillDataWrapper;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -31,44 +27,31 @@ public abstract class ServiceSkillProvider extends Service {
 
     final ExecutorService serviceExecutor = Executors.newCachedThreadPool();
 
-    final Messenger serviceMessenger = new Messenger(new MessageHandler(Looper.getMainLooper()));
+    Binder serviceMessenger;
+
+    Object lockForSkillRemoteActivating;
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        serviceMessenger = new ServiceSkillHandler(this);
+        lockForSkillRemoteActivating = new Object();
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        serviceMessenger = null;
+        lockForSkillRemoteActivating = null;
+    }
 
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
-        return serviceMessenger.getBinder();
+        return serviceMessenger;
     }
 
-    public class MessageHandler extends Handler {
 
-        private final ServiceSkillHandler serviceSkillHandler = new ServiceSkillHandler(ServiceSkillProvider.this);
-
-        public MessageHandler(@NonNull @NotNull Looper looper) {
-            super(looper);
-        }
-
-        @Override
-        public void handleMessage(@NonNull Message msg) {
-            super.handleMessage(msg);
-            switch (ServiceMessageType.values()[msg.what]) {
-                case GET_SKILL_LIST:
-                    Message reply = Message.obtain(null, ServiceMessageType.GET_SKILL_LIST.ordinal());
-                    Bundle bundle = new Bundle();
-                    SkillDataWrapper[] dataOfSkills = exportedSkills.getAllSkillsIdToSkill().values().stream().map(skill -> new SkillDataWrapper(skill.id, skill.desc, skill.argsDesc)).toArray(SkillDataWrapper[]::new);
-                    bundle.putSerializable("skills", dataOfSkills);
-                    reply.setData(bundle);
-                    try {
-                        msg.replyTo.send(reply);
-                    } catch (RemoteException e) {
-                        throw new RuntimeException(e);
-                    }
-                    break;
-                case ACTIVE_SKILL:
-                    serviceSkillHandler.handleMessage(msg);
-                    break;
-            }
-        }
-    }
 }
 
 
