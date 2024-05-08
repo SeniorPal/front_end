@@ -58,6 +58,10 @@ android {
         exclude 'META-INF/DEPENDENCIES'
     }
 
+    buildFeatures {
+        aidl true
+    }
+
 }
 
 dependencies {
