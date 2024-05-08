@@ -25,17 +25,6 @@ public class CombinedSkillRegistry extends SkillRegistry {
     }
 
     @Override
-    public Skill findMostLikelySkillByDesc(String desc, Map<String, String> args) {
-        for (SkillRegistry registry : combinedRegistries) {
-            Skill skillFound = registry.findMostLikelySkillByDesc(desc, args);
-            if (skillFound != null) {
-                return skillFound;
-            }
-        }
-        return null;
-    }
-
-    @Override
     public void registerSkill(Skill skill) {
         throw new UnsupportedOperationException();
     }

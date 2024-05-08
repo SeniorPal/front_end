@@ -27,6 +27,7 @@ import com.baidu.speech.EventListener;
 import com.baidu.speech.asr.SpeechConstant;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.project.seniorpal.skill.CombinedSkillRegistry;
+import com.project.seniorpal.skill.Skill;
 import com.project.seniorpal.skill.SkillRegistry;
 import com.project.seniorpal.skill.service.collector.ServiceSkillCollector;
 import com.theokanning.openai.client.OpenAiApi;
@@ -50,6 +51,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import io.reactivex.Completable;
 import io.reactivex.Flowable;
@@ -96,7 +98,7 @@ public class MainActivity extends AppCompatActivity implements EventListener {
     private ServiceSkillCollector serviceSkillCollector;
     private SkillRegistry allSkills;
 
-    private Map<String, List<Double>> skillEmbeddings;
+//    private Map<String, List<Double>> skillEmbeddings;
 
     @SuppressLint("MissingInflatedId")
     @Override
@@ -231,6 +233,7 @@ public class MainActivity extends AppCompatActivity implements EventListener {
 
     private void chatWithAssistant(String userInput) {
         TextView assMsg = addAssistantMessage("Please wait");
+        sendButton.setClickable(false);
         assMsg.setTypeface(null, Typeface.ITALIC);
         new Single<ChatMessage>() {
             @Override
@@ -254,6 +257,7 @@ public class MainActivity extends AppCompatActivity implements EventListener {
             messages.add(message);
             assMsg.setTypeface(null, Typeface.NORMAL);
             assMsg.setText(message.getContent());
+            sendButton.setClickable(true);
         })
         .doOnError(throwable -> {
             Log.e("Chat", "An error occurred: " + throwable.getMessage());
@@ -307,7 +311,7 @@ public class MainActivity extends AppCompatActivity implements EventListener {
 
     @SuppressLint("CheckResult")
     private void initSkillLibrary() {
-        skillEmbeddings = new HashMap<>();
+//        skillEmbeddings = new HashMap<>();
         serviceSkillCollector = new ServiceSkillCollector(this);
         Future<Void> future = serviceSkillCollector.importAllSkills();
         allSkills = new CombinedSkillRegistry(serviceSkillCollector.importedSkills, SkillRegistry.localRegistry);
@@ -327,15 +331,19 @@ public class MainActivity extends AppCompatActivity implements EventListener {
     @SuppressLint("CheckResult")
     private void createSkillEmbeddings() {
         Set<String> skillIDs = allSkills.getAllSkillsIdToSkill().keySet();
+        AtomicInteger count = new AtomicInteger();
         Observable.fromIterable(skillIDs)
                 .map(skillID -> {
-                    List<Double> embedding = getEmbedding(allSkills.getSkillById(skillID).desc);
-                    skillEmbeddings.put(skillID, embedding);
+                    Skill skill = allSkills.getSkillById(skillID);
+                    List<Double> embedding = getEmbedding(skill.desc);
+                    skill.setEmbeddings(embedding);
+                    count.getAndIncrement();
+//                    skillEmbeddings.put(skillID, embedding);
                     return skillID;
                 })
                 .doOnNext(skillID -> {
                     Log.i("Skill", "Embedding for skill " + skillID + " created");
-                    String embeddingProgress = String.format("Skill Embedding %d/%d created", skillEmbeddings.size(), skillIDs.size());
+                    String embeddingProgress = String.format("Skill Embedding %d/%d created", count.get(), skillIDs.size());
                     greeting.setText(embeddingProgress);
                 })
                 .doOnComplete(() -> {

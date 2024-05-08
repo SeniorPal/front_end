@@ -6,6 +6,7 @@ import androidx.annotation.NonNull;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -61,11 +62,24 @@ public abstract class Skill {
      */
     public final Map<String, String> argsDesc;
 
+    /**
+     * The embeddings of the skill. It is used for the AI to understand the skill.
+     */
+    private List<Double> embeddings;
+
 
     public Skill(String id, String desc, Map<String, String> argsDesc) {
         this.id = id;
         this.desc = desc;
         this.argsDesc = Collections.unmodifiableMap(new HashMap<>(argsDesc));
+    }
+
+    public void setEmbeddings(List<Double> embeddings) {
+        this.embeddings = embeddings;
+    }
+
+    public List<Double> getEmbeddings() {
+        return embeddings;
     }
 
     /**
