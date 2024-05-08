@@ -75,6 +75,12 @@ public class SkillDataWrapper implements Parcelable {
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
+        builder.append("{" + "\"type\": \"function\"," + "\"function\": {" + "\"name\": \"");
+        builder.append(id);
+        builder.append("\"," + "\"description\": \"");
+        builder.append(desc);
+        builder.append("\"," + "\"parameters\": ");
+
         builder.append("{" + "\"type\": \"object\"," + "\"properties\": " + '{');
         for (Map.Entry<String, String> entry : args.entrySet()) {
             builder.append('"' + entry.getKey() + '"' + ": { \"type\": \"string\",");
@@ -84,7 +90,7 @@ public class SkillDataWrapper implements Parcelable {
         for (String key : args.keySet()) {
             builder.append('\"' + key + '\"' + ',');
         }
-        builder.append("]}");
+        builder.append("]} }}");
         return builder.toString();
     }
 }
