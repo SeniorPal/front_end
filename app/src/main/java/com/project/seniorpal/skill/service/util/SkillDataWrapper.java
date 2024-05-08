@@ -1,14 +1,20 @@
 package com.project.seniorpal.skill.service.util;
 
 import android.content.ComponentName;
+import android.os.Bundle;
+import android.os.Parcel;
+import android.os.Parcelable;
+import androidx.annotation.NonNull;
+import com.project.seniorpal.skill.Skill;
 
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.HashMap;
 import java.util.Map;
 
-public class SkillDataWrapper implements Externalizable {
+public class SkillDataWrapper implements Parcelable {
 
     public String id;
 
@@ -24,20 +30,45 @@ public class SkillDataWrapper implements Externalizable {
         this.args = args;
     }
 
-    public SkillDataWrapper() {
+    public SkillDataWrapper(Skill skill) {
+        this.id = skill.id;
+        this.desc = skill.desc;
+        this.args = skill.argsDesc;
+    }
+
+    protected SkillDataWrapper(Parcel in) {
+        id = in.readString();
+        desc = in.readString();
+        Bundle bundle = in.readBundle(getClass().getClassLoader());
+        args = new HashMap<>(bundle.size());
+        for (String key : bundle.keySet()) {
+            args.put(key, bundle.getString(key));
+        }
+    }
+
+    public static final Creator<SkillDataWrapper> CREATOR = new Creator<SkillDataWrapper>() {
+        @Override
+        public SkillDataWrapper createFromParcel(Parcel in) {
+            return new SkillDataWrapper(in);
+        }
+
+        @Override
+        public SkillDataWrapper[] newArray(int size) {
+            return new SkillDataWrapper[size];
+        }
+    };
+
+    @Override
+    public int describeContents() {
+        return 0;
     }
 
     @Override
-    public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeUTF(id);
-        out.writeUTF(desc);
-        out.writeObject(args);
-    }
-
-    @Override
-    public void readExternal(ObjectInput in) throws ClassNotFoundException, IOException {
-        id = in.readUTF();
-        desc = in.readUTF();
-        args = (Map<String, String>) in.readObject();
+    public void writeToParcel(@NonNull Parcel dest, int flags) {
+        dest.writeString(id);
+        dest.writeString(desc);
+        Bundle bundle = new Bundle(args.size());
+        args.forEach(bundle::putString);
+        dest.writeBundle(bundle);
     }
 }

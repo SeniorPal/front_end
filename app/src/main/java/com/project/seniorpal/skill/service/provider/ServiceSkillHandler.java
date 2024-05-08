@@ -1,57 +1,43 @@
 package com.project.seniorpal.skill.service.provider;
 
-import android.os.Bundle;
-import android.os.Message;
 import android.os.RemoteException;
-import androidx.annotation.NonNull;
 import com.project.seniorpal.skill.Skill;
-import com.project.seniorpal.skill.SkillRegistry;
-import com.project.seniorpal.skill.service.util.ServiceMessageType;
+import com.project.seniorpal.skill.service.ISkillProvider;
 import com.project.seniorpal.skill.service.util.SkillDataWrapper;
-import org.json.JSONObject;
 
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
-public class ServiceSkillHandler {
+public class ServiceSkillHandler extends ISkillProvider.Stub {
 
-    private final ServiceSkillProvider baseService;
+    private final ServiceSkillProvider skillProvider;
 
-    private final SkillRegistry baseRegistry;
-
-    ServiceSkillHandler(ServiceSkillProvider baseService) {
-        this.baseService = baseService;
-        this.baseRegistry = baseService.exportedSkills;
+    public ServiceSkillHandler(ServiceSkillProvider skillProvider) {
+        this.skillProvider = skillProvider;
     }
 
-    public void handleMessage(@NonNull Message msg) {
-        if (ServiceMessageType.values()[msg.what] != ServiceMessageType.ACTIVE_SKILL) {
-            return;
-        }
-        Message reply = Message.obtain(null, ServiceMessageType.GET_SKILL_LIST.ordinal());
-        Bundle bundle = new Bundle();
-        try {
-            System.out.println("SKill id received");
-            SkillDataWrapper data = (SkillDataWrapper) msg.getData().getSerializable("skill");
-            Skill skill = baseRegistry.getSkillById(data.id);
-            if (skill == null) {
+    @Override
+    public List<SkillDataWrapper> getAllSkills() throws RemoteException {
+        return skillProvider.exportedSkills.getAllSkillsIdToSkill().values().stream().map(SkillDataWrapper::new).collect(Collectors.toList());
+    }
 
-                bundle.putBoolean("activated", false);
-                bundle.putString("reason", "Invalid skill id: " + data.id);
-                reply.setData(bundle);
-                msg.replyTo.send(reply);
-                return;
+    @Override
+    public Map<String, String> activeSkill(SkillDataWrapper skillData, Skill.ActivatorType activatorType) throws RemoteException {
+        synchronized (skillProvider.lockForSkillRemoteActivating) {
+            Skill targetSkill = skillProvider.exportedSkills.getSkillById(skillData.id);
+            if (targetSkill == null) {
+                HashMap<String, String> result = new HashMap<>();
+                result.put("succeed", Boolean.toString(false));
+                result.put("reason", "No such Skill: " + skillData.id);
+                return result;
             }
-            baseService.serviceExecutor.submit(() -> {
-                Map<String, String> result = skill.active(data.args, Skill.ActivatorType.NON_AI);
-                bundle.putBoolean("activated", true);
-                bundle.putString("result", new JSONObject(result).toString());
-                reply.setData(bundle);
-                try {
-                    msg.replyTo.send(reply);
-                } catch (RemoteException ignored) {
-                }
-            });
-        } catch (RemoteException ignored) {
+            try {
+                return targetSkill.active(skillData.args, activatorType);
+            } catch (Exception e) {
+                return null;
+            }
         }
     }
 }

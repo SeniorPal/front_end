@@ -9,6 +9,7 @@ import android.content.pm.ResolveInfo;
 import android.os.*;
 import com.project.seniorpal.skill.CombinedSkillRegistry;
 import com.project.seniorpal.skill.SkillRegistry;
+import com.project.seniorpal.skill.service.ISkillProvider;
 import com.project.seniorpal.skill.service.util.OneTimeConnection;
 import com.project.seniorpal.skill.service.util.ServiceMessageType;
 import com.project.seniorpal.skill.service.util.SkillDataWrapper;
@@ -38,7 +39,7 @@ public class ServiceSkillCollector {
         this.currentContext = currentContext;
     }
 
-    public Future<Void> refreshImportedSkills() {
+    public Future<Void> importAllSkills() {
         FutureTask<Void> future = new FutureTask<>(() -> {
             importSkills();
             System.out.println("Import finished");
@@ -61,21 +62,18 @@ public class ServiceSkillCollector {
             ComponentName componentNameOfService = new ComponentName(info.serviceInfo.packageName, info.serviceInfo.name);
             Intent intent = new Intent();
             intent.setComponent(componentNameOfService);
-            ServiceConnection[] connection = new ServiceConnection[]{null};
-            Messenger receiver = new Messenger(new Handler(Looper.getMainLooper()) {
-                @Override
-                public void handleMessage(Message msg) {
-                    super.handleMessage(msg);
-                    Bundle data = msg.getData();
-                    SkillDataWrapper[] skillData = (SkillDataWrapper[]) data.getSerializable("skills");
-                    synchronized (importedSkills0) {
-                        System.out.printf("Received skills %s%n", Arrays.toString(skillData));
-                        for (SkillDataWrapper skillDatum : skillData) {
-                            System.out.printf("Received skill id = %s desc = %s%n", skillDatum.id, skillDatum.desc);
-                            importedSkills0.registerSkill(new ServiceSkillAdapter(skillDatum.id, skillDatum.desc, skillDatum.args, currentContext, componentNameOfService));
-                        }
+
+            OneTimeConnection connection = new OneTimeConnection();
+            connection.setCallback((name, service) -> {
+                ISkillProvider provider = ISkillProvider.Stub.asInterface(service);
+                try {
+                    List<SkillDataWrapper> dataWrappers = provider.getAllSkills();
+                    for (SkillDataWrapper dataWrapper : dataWrappers) {
+                        importedSkills0.registerSkill(new ServiceSkillAdapter(dataWrapper, currentContext, componentNameOfService));
                     }
-                    currentContext.unbindService(connection[0]);
+                } catch (RemoteException ignored) {
+                } finally {
+                    currentContext.unbindService(connection);
                     if (queryingServiceCounter.decrementAndGet() == 0) {
                         synchronized (waiter) {
                             waiter.notify();
@@ -83,10 +81,8 @@ public class ServiceSkillCollector {
                     }
                 }
             });
-            Message messageToSend = new Message();
-            messageToSend.what = ServiceMessageType.GET_SKILL_LIST.ordinal();
-            connection[0] = new OneTimeConnection(receiver, messageToSend);
-            currentContext.bindService(intent, connection[0], Context.BIND_AUTO_CREATE);
+
+            currentContext.bindService(intent, connection, Context.BIND_AUTO_CREATE);
         }
         synchronized (waiter) {
             try {
