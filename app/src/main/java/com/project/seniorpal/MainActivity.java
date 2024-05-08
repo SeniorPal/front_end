@@ -46,6 +46,8 @@ import io.reactivex.Flowable;
 import io.reactivex.FlowableSubscriber;
 import io.reactivex.Observable;
 import io.reactivex.Scheduler;
+import io.reactivex.Single;
+import io.reactivex.SingleObserver;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.schedulers.Schedulers;
 import io.reactivex.subscribers.DisposableSubscriber;
@@ -131,7 +133,7 @@ public class MainActivity extends AppCompatActivity implements EventListener {
                 userInput.setText(""); // Clear input after sending
             }
             // Chat with LLM
-            chatWithAssistantStream(userInputText);
+            chatWithAssistant(userInputText);
         });
 
         language.setOnCheckedChangeListener((group, checkedId) -> {
@@ -177,17 +179,33 @@ public class MainActivity extends AppCompatActivity implements EventListener {
     }
 
     private void chatWithAssistant(String userInput) {
-        ChatMessage chatMessage = new ChatMessage(ChatMessageRole.USER.value(), userInput);
-        messages.add(chatMessage);
-        ChatCompletionRequest chatCompletionRequest = ChatCompletionRequest
-                .builder()
-                .model("glm-4")
-                .messages(messages)
-                .build();
         TextView assMsg = addAssistantMessage("Please wait");
-        String response = openAiService.createChatCompletion(chatCompletionRequest)
-                .getChoices().get(0).getMessage().getContent();
-        assMsg.setText(response);
+        new Single<ChatMessage>() {
+            @Override
+            protected void subscribeActual(SingleObserver<? super ChatMessage> observer) {
+                ChatMessage chatMessage = new ChatMessage(ChatMessageRole.USER.value(), userInput);
+                messages.add(chatMessage);
+                ChatCompletionRequest chatCompletionRequest = ChatCompletionRequest
+                        .builder()
+                        .model("glm-4")
+                        .messages(messages)
+                        .build();
+                ChatMessage respMsg = openAiService.createChatCompletion(chatCompletionRequest)
+                        .getChoices().get(0).getMessage();
+                observer.onSuccess(respMsg);
+            }
+        }
+        .subscribeOn(Schedulers.io())
+        .observeOn(AndroidSchedulers.mainThread())
+        .doAfterSuccess(message -> {
+            messages.add(message);
+            assMsg.setText(message.getContent());
+        })
+        .doOnError(throwable -> {
+            Log.e("Chat", "An error occurred: " + throwable.getMessage());
+            assMsg.setText("An error occurred: " + throwable.getMessage());
+            assMsg.setTextColor(Color.RED);
+        }).subscribe();
     }
 
     @SuppressLint("CheckResult")
@@ -205,7 +223,7 @@ public class MainActivity extends AppCompatActivity implements EventListener {
                 .subscribeOn(Schedulers.io());
         openAiService.mapStreamToAccumulator(flowable)
                 .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
+                .observeOn(Schedulers.computation())
                 .doOnNext(accumulator -> {
                     if (accumulator.isFunctionCall()) {
                         if (isFirst.getAndSet(false)) {
@@ -214,11 +232,11 @@ public class MainActivity extends AppCompatActivity implements EventListener {
                     } else {
                         if (isFirst.getAndSet(false)) {
                             Log.i("Chat", "Cleared message hint");
-                            assMsg.setText("");
+                            handler.post(() -> assMsg.setText(""));
                         }
                         if (accumulator.getMessageChunk().getContent() != null) {
                             Log.i("Chat", "Received chunk: " + accumulator.getMessageChunk().getContent());
-                            assMsg.append(accumulator.getMessageChunk().getContent());
+                            handler.post(() -> assMsg.append(accumulator.getMessageChunk().getContent()));
                         }
                     }
                 })
@@ -228,7 +246,7 @@ public class MainActivity extends AppCompatActivity implements EventListener {
                 .lastElement()
                 .subscribeOn(Schedulers.io())
                 .doAfterSuccess(accumulator -> {
-                    messages.add(accumulator.getAccumulatedMessage());
+                    handler.post(() -> messages.add(accumulator.getAccumulatedMessage()));
                 }).subscribe();
 //        openAiService.streamChatCompletion(chatCompletionRequest)
 //                .observeOn(AndroidSchedulers.mainThread())
