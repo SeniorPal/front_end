@@ -71,4 +71,20 @@ public class SkillDataWrapper implements Parcelable {
         args.forEach(bundle::putString);
         dest.writeBundle(bundle);
     }
+
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        builder.append("{" + "\"type\": \"object\"," + "\"properties\": " + '{');
+        for (Map.Entry<String, String> entry : args.entrySet()) {
+            builder.append('"' + entry.getKey() + '"' + ": { \"type\": \"string\",");
+            builder.append("\"description\": \"" + entry.getValue() + '\"' + "},");
+        }
+        builder.append("},\"required\": [");
+        for (String key : args.keySet()) {
+            builder.append('\"' + key + '\"' + ',');
+        }
+        builder.append("]}");
+        return builder.toString();
+    }
 }
