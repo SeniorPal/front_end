@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
     <PreferenceCategory android:title="General Settings">
@@ -7,14 +8,14 @@
             android:title="Voice Feedback"
             android:summary="Toggle voice feedback for operations"
             android:defaultValue="true"
-            android:icon="@drawable/ic_launcher_foreground" />
+            android:icon="@drawable/voice_feedback" />
 
         <SwitchPreferenceCompat
             android:key="notifications"
             android:title="Notifications"
             android:summary="Receive alerts and notifications"
             android:defaultValue="true"
-            android:icon="@drawable/ic_launcher_foreground" />
+            android:icon="@drawable/notifications" />
 
         <SeekBarPreference
             android:key="voice_speed"
@@ -22,7 +23,7 @@
             android:summary="Adjust the speed of the voice feedback"
             android:defaultValue="50"
             android:max="100"
-            android:icon="@drawable/ic_launcher_foreground" />
+            android:icon="@drawable/voice_speed" />
     </PreferenceCategory>
 
     <PreferenceCategory android:title="Accessibility">
@@ -31,7 +32,7 @@
             android:title="Large Text"
             android:summary="Enable larger text for better readability"
             android:defaultValue="false"
-            android:icon="@drawable/ic_launcher_foreground" />
+            android:icon="@drawable/text_size" />
 
         <ListPreference
             android:key="theme_selection"
@@ -41,15 +42,7 @@
             android:entries="@array/theme_options"
             android:entryValues="@array/theme_values"
             android:defaultValue="light"
-            android:icon="@drawable/ic_launcher_foreground" />
-
-        <SwitchPreferenceCompat
-                android:key="accessibility_switch"
-                android:title="Accessibility"
-                android:summary="Turn on Accessibility Service"
-                android:defaultValue="false"
-                android:icon="@drawable/ic_launcher_foreground" />
-
+            android:icon="@drawable/theme_selection" />
     </PreferenceCategory>
 
 </PreferenceScreen>
