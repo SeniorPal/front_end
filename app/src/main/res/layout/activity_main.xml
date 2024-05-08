@@ -154,7 +154,7 @@
                             android:layout_height="wrap_content"
                             android:paddingHorizontal="10dp"
                             android:paddingVertical="10dp"
-                            android:text="@string/default_greeting"
+                            android:text="@string/default_greeting_spaceholder"
                             android:textColor="#000000"
                             android:textSize="16sp" />
                     </LinearLayout>
@@ -259,7 +259,7 @@
                         android:background="#00FFFFFF"
                         android:scaleType="centerInside"
                         android:src="@drawable/send_btn"
-                        android:clickable="true"
+                        android:clickable="false"
                         android:focusable="true"/>
                 </LinearLayout>
 

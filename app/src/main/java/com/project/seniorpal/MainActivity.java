@@ -4,10 +4,10 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.StrictMode;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
@@ -34,31 +34,35 @@ import com.theokanning.openai.completion.chat.ChatCompletionChunk;
 import com.theokanning.openai.completion.chat.ChatCompletionRequest;
 import com.theokanning.openai.completion.chat.ChatMessage;
 import com.theokanning.openai.completion.chat.ChatMessageRole;
+import com.theokanning.openai.embedding.EmbeddingRequest;
+import com.theokanning.openai.embedding.EmbeddingResult;
 import com.theokanning.openai.service.OpenAiService;
 
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.reactivestreams.Subscription;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import io.reactivex.Completable;
 import io.reactivex.Flowable;
-import io.reactivex.FlowableSubscriber;
 import io.reactivex.Observable;
-import io.reactivex.Scheduler;
 import io.reactivex.Single;
 import io.reactivex.SingleObserver;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.schedulers.Schedulers;
-import io.reactivex.subscribers.DisposableSubscriber;
-import kotlinx.coroutines.flow.Flow;
+import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
+import okhttp3.RequestBody;
+import okio.Buffer;
 import retrofit2.Retrofit;
 
 public class MainActivity extends AppCompatActivity implements EventListener {
@@ -72,6 +76,8 @@ public class MainActivity extends AppCompatActivity implements EventListener {
     private ScrollView scrollView;
     private LinearLayout chatList;
     private ImageButton sendButton;
+
+    private TextView greeting;
 
     private int id;
 
@@ -90,6 +96,8 @@ public class MainActivity extends AppCompatActivity implements EventListener {
     private ServiceSkillCollector serviceSkillCollector;
     private SkillRegistry allSkills;
 
+    private Map<String, List<Double>> skillEmbeddings;
+
     @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -100,10 +108,7 @@ public class MainActivity extends AppCompatActivity implements EventListener {
         initializeViews();
         initZhipuAIClient();
         setupListeners();
-        serviceSkillCollector = new ServiceSkillCollector(this);
-        Future<Void> future = serviceSkillCollector.importAllSkills();
-        allSkills = new CombinedSkillRegistry(serviceSkillCollector.importedSkills, SkillRegistry.localRegistry);
-
+        initSkillLibrary();
         startForegroundService(this);  // 在适当的位置调用以启动前台服务
 //        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
 //        StrictMode.setThreadPolicy(policy);
@@ -131,6 +136,7 @@ public class MainActivity extends AppCompatActivity implements EventListener {
         scrollView = findViewById(R.id.sv_chat_list);
         chatList = findViewById(R.id.ll_chat_list);
         sendButton = findViewById(R.id.bt_send);
+        greeting = findViewById(R.id.tv_chat_notice);
 
         CardView settingsButton = findViewById(R.id.cv_settings);
         settingsButton.setOnClickListener(v -> {
@@ -186,11 +192,30 @@ public class MainActivity extends AppCompatActivity implements EventListener {
         ObjectMapper mapper = OpenAiService.defaultObjectMapper();
         OkHttpClient client = OpenAiService.defaultClient(API_KEY, Duration.ofSeconds(30))
                 .newBuilder()
+                // Replease the base url to Zhipu AI
                 .addInterceptor(chain -> {
                     Request request = chain.request();
                     if (request.url().url().toString().contains(OPENAI_BASE)) {
                         request = request.newBuilder()
                                 .url(request.url().url().toString().replace(OPENAI_BASE, ZHIPU_AI_BASE))
+                                .build();
+                    }
+                    return chain.proceed(request);
+                })
+                // Adapt the embeddings request body to the Zhipu AI API
+                .addInterceptor(chain -> {
+                    Request request = chain.request();
+                    if (request.url().url().toString().endsWith("embeddings")) {
+                        Buffer buffer = new Buffer();
+                        request.body().writeTo(buffer);
+                        String bodyString = buffer.readUtf8();
+                        buffer.close();
+                        RequestBody newBody = RequestBody.create(
+                                MediaType.get("application/json; charset=utf-8"),
+                                bodyString.replaceAll("[\\[\\]]", "")
+                        );
+                        request = request.newBuilder()
+                                .post(newBody)
                                 .build();
                     }
                     return chain.proceed(request);
@@ -201,10 +226,12 @@ public class MainActivity extends AppCompatActivity implements EventListener {
 
         // Initialize the messages list
         messages = new ArrayList<>();
+        messages.add(new ChatMessage(ChatMessageRole.SYSTEM.value(), getString(R.string.SYSTEM_PROMPT)));
     }
 
     private void chatWithAssistant(String userInput) {
         TextView assMsg = addAssistantMessage("Please wait");
+        assMsg.setTypeface(null, Typeface.ITALIC);
         new Single<ChatMessage>() {
             @Override
             protected void subscribeActual(SingleObserver<? super ChatMessage> observer) {
@@ -213,6 +240,7 @@ public class MainActivity extends AppCompatActivity implements EventListener {
                 ChatCompletionRequest chatCompletionRequest = ChatCompletionRequest
                         .builder()
                         .model("glm-4")
+                        .topP(0.2)
                         .messages(messages)
                         .build();
                 ChatMessage respMsg = openAiService.createChatCompletion(chatCompletionRequest)
@@ -224,10 +252,12 @@ public class MainActivity extends AppCompatActivity implements EventListener {
         .observeOn(AndroidSchedulers.mainThread())
         .doAfterSuccess(message -> {
             messages.add(message);
+            assMsg.setTypeface(null, Typeface.NORMAL);
             assMsg.setText(message.getContent());
         })
         .doOnError(throwable -> {
             Log.e("Chat", "An error occurred: " + throwable.getMessage());
+            assMsg.setTypeface(null, Typeface.NORMAL);
             assMsg.setText("An error occurred: " + throwable.getMessage());
             assMsg.setTextColor(Color.RED);
         }).subscribe();
@@ -273,26 +303,68 @@ public class MainActivity extends AppCompatActivity implements EventListener {
                 .doAfterSuccess(accumulator -> {
                     handler.post(() -> messages.add(accumulator.getAccumulatedMessage()));
                 }).subscribe();
-//        openAiService.streamChatCompletion(chatCompletionRequest)
-//                .observeOn(AndroidSchedulers.mainThread())
-//                .subscribeOn(Schedulers.io())
-//                .doOnSubscribe(subscription -> {
-//                    Log.i("Chat", "Chat started");
-//                })
-//                .doOnNext(chunk -> {
-//                    if (isFirst.getAndSet(false)) {
-//                        assMsg.setText("");
-//                    }
-//                    Log.i("Chat", "Received chunk: " + chunk.getChoices().get(0).getMessage().getContent());
-//                    assMsg.append(chunk.getChoices().get(0).getMessage().getContent());
-//                })
-//                .doOnError(throwable -> {
-//                    Log.e("Chat", "An error occurred: " + throwable.getMessage());
-//                    assMsg.setText("An error occurred: " + throwable.getMessage());
-//                })
-//                .doOnComplete(() -> {
-//                    Log.i("Chat", "Chat completed");
-//                }).subscribe();
+    }
+
+    @SuppressLint("CheckResult")
+    private void initSkillLibrary() {
+        skillEmbeddings = new HashMap<>();
+        serviceSkillCollector = new ServiceSkillCollector(this);
+        Future<Void> future = serviceSkillCollector.importAllSkills();
+        allSkills = new CombinedSkillRegistry(serviceSkillCollector.importedSkills, SkillRegistry.localRegistry);
+        Completable.fromFuture(future)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(() -> {
+                    Log.i("Skill", "All skills imported successfully");
+                    greeting.setText("All skills imported successfully");
+                    createSkillEmbeddings();
+                }, throwable -> {
+                    Log.e("Skill", "Failed to import skills: " + throwable.getMessage());
+                    greeting.setText("Failed to import skills: " + throwable.getMessage());
+                });
+    }
+
+    @SuppressLint("CheckResult")
+    private void createSkillEmbeddings() {
+        Set<String> skillIDs = allSkills.getAllSkillsIdToSkill().keySet();
+        Observable.fromIterable(skillIDs)
+                .map(skillID -> {
+                    List<Double> embedding = getEmbedding(allSkills.getSkillById(skillID).desc);
+                    skillEmbeddings.put(skillID, embedding);
+                    return skillID;
+                })
+                .doOnNext(skillID -> {
+                    Log.i("Skill", "Embedding for skill " + skillID + " created");
+                    String embeddingProgress = String.format("Skill Embedding %d/%d created", skillEmbeddings.size(), skillIDs.size());
+                    greeting.setText(embeddingProgress);
+                })
+                .doOnComplete(() -> {
+                    Log.i("Skill", "All skill embeddings created");
+                    greeting.setText(R.string.default_greeting);
+                    sendButton.setClickable(true);
+                })
+                .doOnSubscribe(disposable -> {
+                    greeting.setText("Creating skill embeddings...");
+                })
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe();
+    }
+
+    /**
+     * Get the embeddings for the input text
+     * Due to the limitations of the Zhipu AI API, only one input text can be processed at a time
+     *
+     * @param input The input text
+     * @return The embeddings
+     */
+    private List<Double> getEmbedding(String input) {
+        EmbeddingRequest embeddingRequest = EmbeddingRequest.builder()
+                .input(Arrays.asList(input))
+                .model("embedding-2")
+                .build();
+        EmbeddingResult result = openAiService.createEmbeddings(embeddingRequest);
+        return result.getData().get(0).getEmbedding();
     }
 
     private TextView addUserMessage(String message) {

@@ -5,6 +5,8 @@
     <string name="settings">Settings</string>
     <string name="accessibility">Provided functions such as simulated clicking.</string>
     <string name="skill_provider">Provides skills for other apps to call.</string>
+    <string name="SYSTEM_PROMPT">你是一个名叫\"小友\"的智能助手，可以与老年用户聊天和协助操作他们的安卓手机。你可以调用一系列的技能（function）来满足用户的需求，它们将会通过tools的形式提供。\n例如当用户想要拨打电话给某人时你可以调用对应的方法拨打电话。\n不要假设或猜测传入函数的参数值。如果用户的描述不明确，请要求用户提供必要信息。</string>
+    <string name="default_greeting_spaceholder">Skill Library Initializing</string>
     <string-array name="theme_options">
         <item>Light</item>
         <item>Dark</item>
